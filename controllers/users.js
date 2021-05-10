@@ -4,6 +4,17 @@ const User = require('../models/user');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
+const sendToken = (res, user) => {
+  // создадим токен
+  const token = jwt.sign(
+    { _id: user._id },
+    NODE_ENV === 'production' ? JWT_SECRET : 'strong-protection',
+    { expiresIn: '7d' }, // токен будет просрочен через неделю после создания
+  );
+  // вернём токен
+  res.send({ token });
+};
+
 module.exports.createUser = (req, res, next) => {
   const {
     name, email, password,
@@ -13,14 +24,7 @@ module.exports.createUser = (req, res, next) => {
       name, email, password: hash,
     }))
     .then((user) => {
-      // создадим токен
-      const token = jwt.sign(
-        { _id: user._id },
-        NODE_ENV === 'production' ? JWT_SECRET : 'strong-protection',
-        { expiresIn: '7d' }, // токен будет просрочен через неделю после создания
-      );
-        // вернём токен
-      res.send({ token });
+      sendToken(res, user);
     })
     .catch((e) => {
       if (e.code === 11000) {
@@ -36,14 +40,7 @@ module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   User.findUserByCredentials(email, password)
     .then((user) => {
-      // создадим токен
-      const token = jwt.sign(
-        { _id: user._id },
-        NODE_ENV === 'production' ? JWT_SECRET : 'strong-protection',
-        { expiresIn: '7d' }, // токен будет просрочен через неделю после создания
-      );
-        // вернём токен
-      res.send({ token });
+      sendToken(res, user);
     })
     .catch(() => {
       const err = new Error('Неверный email или пароль');
